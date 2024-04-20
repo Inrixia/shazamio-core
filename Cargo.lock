@@ -219,8 +219,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "shazamio-core-wasm"
-version = "1.0.0"
+name = "shazamio-core"
+version = "1.0.1"
 dependencies = [
  "base64",
  "byteorder",
