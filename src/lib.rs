@@ -3,7 +3,6 @@ mod fingerprinting;
 use std::error::Error;
 use wasm_bindgen::prelude::*;
 use fingerprinting::{algorithm::SignatureGenerator, signature_format::DecodedSignature};
-use web_sys::js_sys::{Object, Reflect};
 
 #[wasm_bindgen]
 pub struct Recognizer;
@@ -49,13 +48,4 @@ impl Recognizer {
 
 fn convert_to_sig(decoded_sig: &DecodedSignature) -> Result<Signature, Box<dyn Error>> {
     Ok(Signature::new(decoded_sig.encode_to_uri()?, (decoded_sig.number_samples as f64 / decoded_sig.sample_rate_hz as f64 * 1000.0) as u32))
-}
-
-/// Converts a `DecodedSignature` into a JavaScript object.
-fn convert_to_js(signature: &DecodedSignature) -> Result<JsValue, Box<dyn Error>> {
-    let js_obj = Object::new();
-    let milliseconds = (signature.number_samples as f64 / signature.sample_rate_hz as f64 * 1000.0) as u32;
-    let _ = Reflect::set(&js_obj, &JsValue::from_str("samplems"), &JsValue::from_f64(milliseconds as f64));
-    let _ = Reflect::set(&js_obj, &JsValue::from_str("uri"), &JsValue::from_str(&signature.encode_to_uri()?));
-    Ok(JsValue::from(js_obj))
 }
