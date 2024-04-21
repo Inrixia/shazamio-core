@@ -1,0 +1,34 @@
+[tasks.build-wasm]
+description = "Builds the project for the wasm"
+command = "cargo"
+args = ["build", "--target", "wasm32-unknown-unknown", "--release"]
+
+[tasks.build-web]
+description = "Builds the project for the web"
+command = "wasm-bindgen"
+args = ["./target/wasm32-unknown-unknown/release/shazamio_core.wasm", "--out-dir", "./pkg/web", "--target", "web", "--out-name", "shazamio-core"]
+
+[tasks.build-node]
+description = "Builds the project for Node.js"
+command = "wasm-bindgen"
+args = ["./target/wasm32-unknown-unknown/release/shazamio_core.wasm", "--out-dir", "./pkg/node", "--target", "nodejs", "--out-name", "shazamio-core"]
+
+[tasks.cleanup]
+description = "Remove existing build files"
+script_runner = "@shell"
+script = '''
+mkdir ./pkg/node ./pkg/web
+rm ./pkg/node/shazamio-core* ./pkg/web/shazamio-core*
+'''
+
+[tasks.readme]
+description = "Copy readme & license into pkg"
+script_runner = "@shell"
+script = '''
+cp ./README.md ./pkg/
+cp ./LICENSE ./pkg/
+'''
+
+[tasks.build-all]
+description = "Builds all targets"
+dependencies = ["build-wasm", "cleanup", "build-node", "build-web", "readme"]

@@ -6,14 +6,14 @@ rust-version = "1.77.2"
 
 [lib]
 name = "shazamio_core"
-crate-type = ["cdylib", "lib"]
+crate-type = ["cdylib"]
 
 
 [dependencies]
 byteorder = "1.5.0"
 crc32fast = "1.4.0"
 base64 = { version = "0.22", features = [] }
-chfft = {version = "0.3.4"}
+chfft = {version = "0.3.4"} 
 bytes = "1.5.0"
 wasm-bindgen = { version = "0.2.92", features = ["serde"] }
 symphonia = { version = "0.5.4", features = ["all"] }

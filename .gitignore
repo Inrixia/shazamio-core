@@ -1,78 +1,19 @@
-/target
+*
+!/.github/
+!/.github/**
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-.pytest_cache/
-*.py[cod]
+!pkg/
+!pkg/package.json
+!pkg/web
+!pkg/web/package.json
 
-# C extensions
-*.so
+!/src/
+!/src/**
 
-# Distribution / packaging
-.Python
-.venv/
-env/
-bin/
-build/
-develop-eggs/
-dist/
-eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-include/
-man/
-venv/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-pip-selfcheck.json
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.coverage
-.cache
-nosetests.xml
-coverage.xml
-
-# Translations
-*.mo
-
-# Mr Developer
-.mr.developer.cfg
-.project
-.pydevproject
-
-# Rope
-.ropeproject
-
-# Django stuff:
-*.log
-*.pot
-
-.DS_Store
-
-# Sphinx documentation
-docs/_build/
-
-# PyCharm
-../shazamio_core/.idea/
-
-# VSCode
-.vscode/
-
-# Pyenv
-.python-version
-
-# Other
-build
-target
-.idea
-node-test/
+!/.gitignore
+!/.Cargo.lock
+!/.Cargo.toml
+!/Makefile.toml
+!/LICENSE
+!/README.md
+!/package.json
