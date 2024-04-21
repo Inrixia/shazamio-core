@@ -2,7 +2,6 @@ use crate::fingerprinting::decode::samples_from_bytes;
 use crate::fingerprinting::hanning::HANNING_WINDOW_2048_MULTIPLIERS;
 use crate::fingerprinting::signature_format::{DecodedSignature, FrequencyBand, FrequencyPeak};
 use chfft::RFft1D;
-use std::collections::HashMap;
 use std::error::Error;
 
 use crate::fingerprinting::resample::resample;
@@ -21,13 +20,34 @@ pub struct SignatureGenerator {
 }
 
 impl SignatureGenerator {
-    pub fn make_signature_from_bytes(bytes: Vec<u8>, offset: usize) -> Result<DecodedSignature, Box<dyn Error>> {
-        let (signal_spec, samples) = samples_from_bytes(bytes, 12, offset)?;
-        let resampled_samples = resample(signal_spec, samples)?;
-        let signature = SignatureGenerator::make_signature_from_buffer(resampled_samples);
+    pub fn make_signature_from_bytes(bytes: Vec<u8>, offset: Option<usize>, seconds: Option<usize>) -> Result<Vec<DecodedSignature>, Box<dyn Error>> {
+        let offset_seconds = offset.unwrap_or(0);
+        
+        let (signal_spec, samples) = samples_from_bytes(bytes, seconds.unwrap_or(12) + offset_seconds)?;
 
-        // Return the generated signature
-        Ok(signature)
+        let target_rate = 16000;
+        let resampled_samples = resample(signal_spec, samples, target_rate)?;
+
+        let offset_samples = offset_seconds * target_rate as usize;
+
+        // Calculate the number of slices needed, adjusting start index by the offset
+        let num_slices = ((resampled_samples.len().saturating_sub(offset_samples) + (12 * 16000) - 1) / (12 * 16000)).max(1);
+        let mut decoded_signatures = Vec::with_capacity(num_slices);
+
+        if num_slices == 1 {
+            let samples_slice = &resampled_samples[offset_samples..];
+            decoded_signatures.push(SignatureGenerator::make_signature_from_buffer(samples_slice.into()));
+        } else {
+            let mut start_index = offset_samples;
+            while start_index < resampled_samples.len() {
+                let end_index = (start_index + (12 * 16000)).min(resampled_samples.len());
+                let samples_slice = &resampled_samples[start_index..end_index];
+                decoded_signatures.push(SignatureGenerator::make_signature_from_buffer(samples_slice.into()));
+                start_index = end_index;
+            }
+        }
+        
+        Ok(decoded_signatures)
     }
 
     pub fn make_signature_from_buffer(s16_mono_16khz_buffer: Vec<i16>) -> DecodedSignature {
@@ -47,11 +67,7 @@ impl SignatureGenerator {
 
             num_spread_ffts_done: 0,
 
-            signature: DecodedSignature {
-                sample_rate_hz: 16000,
-                number_samples: s16_mono_16khz_buffer.len() as u32,
-                frequency_band_to_sound_peaks: HashMap::new(),
-            },
+            signature: DecodedSignature::new(16000, s16_mono_16khz_buffer.len())
         };
         for chunk in s16_mono_16khz_buffer.chunks_exact(128) {
             this.do_fft(chunk);

@@ -11,13 +11,15 @@ npm install shazamio-core
 ## Types
 
 ```ts
-interface Signature {
-	samplems: number; // ms of audio sampled for this signature
-	uri: string; // encoded sample data
+class DecodedSignature {
+	number_samples: number;
+	sample_rate_hz: number;
+	readonly samplems: number;
+	readonly uri: string;
 }
 ```
 
-## Usage
+## Examples
 
 ### Node.js
 
@@ -26,7 +28,7 @@ import { Recognizer } from "shazamio-core";
 import { readFileSync } from "fs";
 
 const songBytes = readFileSync("./my_song.flac");
-const { samplems, uri }: Signature = Recognizer.recognizeBytes(songBytes, 0);
+const signatures: DecodedSignature[] = Recognizer.recognizeBytes(songBytes);
 ```
 
 ### Web
@@ -37,5 +39,23 @@ await initShazamio();
 
 // Get bytes from a File in browser from the user
 const songBytes = new Uint8Array(await file.arrayBuffer());
-const { uri, samplems } = Recognizer.recognizeBytes(songBytes, 0);
+const signatures: DecodedSignature[] = Recognizer.recognizeBytes(songBytes);
 ```
+
+<br/>
+
+## Methods
+
+### recognizeBytes
+
+Recognizes an audio fingerprint fron song bytes and returns decoded signatures.
+
+```ts
+function recognizeBytes(bytes: Uint8Array, offset?: number, seconds?: number): DecodedSignature[];
+```
+
+#### Parameters
+
+- `bytes` - Bytes of the song file
+- `offset` - When to start sampling from in seconds
+- `seconds` - Seconds to sample from offset

@@ -5,8 +5,7 @@ use rubato::SincInterpolationParameters;
 use symphonia::core::audio::SignalSpec;
 use std::error::Error;
 
-pub fn resample(spec: SignalSpec, samples: Vec<f32>) -> Result<Vec<i16>, Box<dyn Error>> {
-    let target_rate = 16_000;
+pub fn resample(spec: SignalSpec, samples: Vec<f32>, target_rate: i32) -> Result<Vec<i16>, Box<dyn Error>> {
     let resample_ratio = target_rate as f64 / spec.rate as f64;
     let max_resample_ratio_relative = 2.0;
     let channel_count = spec.channels.count();

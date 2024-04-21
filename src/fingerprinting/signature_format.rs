@@ -2,6 +2,7 @@ use base64::engine::general_purpose;
 use base64::Engine;
 use byteorder::{LittleEndian, WriteBytesExt};
 use crc32fast::Hasher;
+use wasm_bindgen::prelude::wasm_bindgen;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::error::Error;
@@ -36,14 +37,25 @@ impl PartialOrd for FrequencyBand {
     }
 }
 
+#[wasm_bindgen]
 pub struct DecodedSignature {
     pub sample_rate_hz: u32,
     pub number_samples: u32,
+    #[wasm_bindgen(skip)]
     pub frequency_band_to_sound_peaks: HashMap<FrequencyBand, Vec<FrequencyPeak>>,
 }
 
+#[wasm_bindgen]
 impl DecodedSignature {
-    pub fn encode_to_binary(&self) -> Result<Vec<u8>, Box<dyn Error>> {
+    pub fn new(sample_rate_hz: u32, number_samples: usize) -> DecodedSignature {
+        DecodedSignature { 
+            sample_rate_hz,
+            number_samples: number_samples as u32,
+            frequency_band_to_sound_peaks: HashMap::new()
+        }
+    }
+
+    fn encode_to_binary(&self) -> Result<Vec<u8>, Box<dyn Error>> {
         let mut cursor = Cursor::new(vec![]);
 
         // Please see the RawSignatureHeader structure definition above for
@@ -132,12 +144,21 @@ impl DecodedSignature {
         Ok(cursor.into_inner())
     }
 
-    pub fn encode_to_uri(&self) -> Result<String, Box<dyn Error>> {
-        Ok(format!(
+    #[wasm_bindgen(getter)]
+    pub fn uri(&self) -> String {
+        let binary = self.encode_to_binary();
+        if binary.is_err() {
+            return String::new();
+        }
+        return format!(
             "{}{}",
             DATA_URI_PREFIX,
-            general_purpose::STANDARD.encode(self.encode_to_binary()?)
-        ))
+            general_purpose::STANDARD.encode(binary.unwrap())
+        ).clone();       
     }
 
+    #[wasm_bindgen(getter)]
+    pub fn samplems(&self) -> u32 {
+        (self.number_samples as f64 / self.sample_rate_hz as f64 * 1000.0) as u32
+    }
 }

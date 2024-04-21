@@ -18,3 +18,4 @@ bytes = "1.5.0"
 wasm-bindgen = { version = "0.2.92", features = ["serde"] }
 symphonia = { version = "0.5.4", features = ["all"] }
 rubato = "0.15.0"
+console_error_panic_hook = "0.1"

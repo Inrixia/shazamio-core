@@ -10,8 +10,7 @@ use symphonia::core::probe::Hint;
 
 pub fn samples_from_bytes(
     bytes: Vec<u8>,
-    seconds: usize,
-    offset: usize
+    sample_seconds: usize
 ) -> Result<(SignalSpec, Vec<f32>), Error> {
     // Create the media source stream.
     let mss = MediaSourceStream::new(Box::new(Cursor::new(bytes)), Default::default());    
@@ -49,18 +48,26 @@ pub fn samples_from_bytes(
         }
 
         match decoder.decode(&packet) {
-            Ok(audio_buf) => {         
+            Ok(audio_buf) => {     
                 spec = *audio_buf.spec();
-                if sample_buf.capacity() < audio_buf.capacity() {
-                    sample_buf = SampleBuffer::<f32>::new(audio_buf.capacity() as u64, spec);
+                let audi_buf_capacity = audio_buf.capacity();
+                
+                if sample_buf.capacity() < audi_buf_capacity {
+                    sample_buf = SampleBuffer::<f32>::new(audi_buf_capacity as u64, spec);
                 }
-
                 sample_buf.copy_interleaved_ref(audio_buf);
-                aggregate_samples.extend_from_slice(sample_buf.samples());                
+                
+                let samples = sample_buf.samples();
+                let current_samples = aggregate_samples.len();
 
-                if aggregate_samples.len() >= ((seconds + offset) * spec.rate as usize * spec.channels.count()) {
+                let max_samples = sample_seconds * spec.rate as usize * spec.channels.count();
+                if current_samples + samples.len() > max_samples {
+                    // Calculate how many samples can still be added without exceeding the max size
+                    aggregate_samples.extend_from_slice(&samples[..max_samples - current_samples]);
                     break;
                 }
+
+                aggregate_samples.extend_from_slice(samples);
             }
             Err(err) => return Err(err),
         }
