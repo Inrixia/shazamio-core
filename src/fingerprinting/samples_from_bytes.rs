@@ -48,7 +48,7 @@ pub fn samples_from_bytes(
         }
 
         match decoder.decode(&packet) {
-            Ok(audio_buf) => {     
+            Ok(audio_buf) => {
                 spec = *audio_buf.spec();
                 let audi_buf_capacity = audio_buf.capacity();
                 

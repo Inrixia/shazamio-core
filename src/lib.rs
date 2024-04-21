@@ -1,8 +1,8 @@
 mod fingerprinting;
-use std::error::Error;
+use std::{error::Error};
 
 use wasm_bindgen::prelude::*;
-use fingerprinting::{decode::samples_from_bytes, decoded_signature::DecodedSignature, resample::resample};
+use fingerprinting::{samples_from_bytes::samples_from_bytes, decoded_signature::DecodedSignature, resample::resample};
 use console_error_panic_hook;
 
 /// Recognizes an audio fingerprint fron song bytes and returns decoded signatures.
@@ -43,10 +43,9 @@ fn signatures_from_bytes(bytes: Vec<u8>, offset: Option<usize>, seconds: Option<
             start_index = end_index;
         }
     }
-    
+
     Ok(decoded_signatures)
 }
-
 
 #[wasm_bindgen(start)]
 pub fn start() {
