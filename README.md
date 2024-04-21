@@ -12,10 +12,9 @@ npm install shazamio-core
 
 ```ts
 class DecodedSignature {
-	number_samples: number;
-	sample_rate_hz: number;
-	readonly samplems: number;
-	readonly uri: string;
+	readonly number_samples: number; // Number of samples used for this signature
+	readonly samplems: number; // Number of ms of audio this sample contains
+	readonly uri: string; // Signature data
 }
 ```
 
@@ -29,6 +28,12 @@ import { readFileSync } from "fs";
 
 const songBytes = readFileSync("./my_song.flac");
 const signatures: DecodedSignature[] = recognizeBytes(songBytes);
+for (const signature of signatures) {
+	console.log(`This sample contains ${signature.samplems}ms of audio, ${signature.number_samples} samples.`);
+	// Make sure you free an objects memory when you're done with it!
+	signature.free();
+	// Accessing properties of signature after freeing memory will throw an exception.
+}
 ```
 
 ### Web
@@ -39,7 +44,10 @@ await initShazamio();
 
 // Get bytes from a File in browser from the user
 const songBytes = new Uint8Array(await file.arrayBuffer());
-const [{ uri, samplems, sample_rate_hz, number_samples }]: DecodedSignature[] = recognizeBytes(songBytes);
+const signatures: DecodedSignature[] = recognizeBytes(songBytes);
+
+// Always free memory when done!
+for (const sig of signatures) sig.free();
 ```
 
 <br/>
