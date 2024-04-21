@@ -14,11 +14,12 @@ const DATA_URI_PREFIX: &str = "data:audio/vnd.shazam.sig;base64,";
 
 #[wasm_bindgen]
 pub struct DecodedSignature {
-    pub sample_rate_hz: u32,
-    pub orig_sample_rate_hz: u32,
-    pub orig_channel_count: usize,
+    sample_rate_hz: u32,
+    orig_sample_rate_hz: u32,
+    orig_channel_count: usize,
     f32_buffer: Vec<f32>,
-    _i16_buffer: Vec<i16>
+    _i16_buffer: Vec<i16>,
+    uri: String,
 }
 
 #[wasm_bindgen]
@@ -29,7 +30,8 @@ impl DecodedSignature {
             orig_sample_rate_hz,
             orig_channel_count,
             _i16_buffer: Vec::new(),
-            f32_buffer
+            f32_buffer,
+            uri: String::new(),
         }
     }
 
@@ -125,15 +127,19 @@ impl DecodedSignature {
 
     #[wasm_bindgen(getter)]
     pub fn uri(&mut self) -> String {
+        if self.uri.len() != 0 {
+            return self.uri.clone();
+        }
         let binary = self.encode_to_binary();
         if binary.is_err() {
             return String::new();
         }
-        return format!(
+        self.uri = format!(
             "{}{}",
             DATA_URI_PREFIX,
             general_purpose::STANDARD.encode(binary.unwrap())
-        ).clone();       
+        ).clone();    
+        return self.uri.clone();
     }
 
     #[wasm_bindgen(getter)]
@@ -141,15 +147,15 @@ impl DecodedSignature {
         (self.number_samples() as f64 / self.sample_rate_hz as f64 * 1000.0) as u32
     }
 
+    #[wasm_bindgen(getter)]
+    pub fn number_samples(&mut self) -> usize {
+        self.i16_buffer().len()
+    }
+
     fn i16_buffer(&mut self) -> &Vec<i16> {
         if self._i16_buffer.len() == 0 {
             self._i16_buffer = resample(self.orig_sample_rate_hz, self.orig_channel_count, &self.f32_buffer, 16000);
         }
         &self._i16_buffer
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn number_samples(&mut self) -> usize {
-        self.i16_buffer().len()
     }
 }

@@ -33,7 +33,7 @@ pub fn samples_from_bytes(
     // Store the track identifier, it will be used to filter packets.
     let track_id = track.id;
 
-    let mut spec: SignalSpec = SignalSpec::new(track.codec_params.sample_rate.unwrap_or(96000), Channels::FRONT_LEFT | Channels::FRONT_RIGHT);
+    let mut spec: SignalSpec = SignalSpec::new(track.codec_params.sample_rate.unwrap_or(48000), Channels::FRONT_LEFT | Channels::FRONT_RIGHT);
     let mut aggregate_samples: Vec<f32> = Vec::with_capacity(12 * spec.rate as usize * 2);
     let mut sample_buf = SampleBuffer::<f32>::new(0, spec);
     loop {
