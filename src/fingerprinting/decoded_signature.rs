@@ -7,6 +7,7 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use std::error::Error;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use crate::fingerprinting::resample::resample;
 use crate::fingerprinting::signature_generator::SignatureGenerator;
 
 const DATA_URI_PREFIX: &str = "data:audio/vnd.shazam.sig;base64,";
@@ -14,21 +15,25 @@ const DATA_URI_PREFIX: &str = "data:audio/vnd.shazam.sig;base64,";
 #[wasm_bindgen]
 pub struct DecodedSignature {
     pub sample_rate_hz: u32,
-    pub number_samples: u32,
-    s16_mono_16khz_buffer: Vec<i16>
+    pub orig_sample_rate_hz: u32,
+    pub orig_channel_count: usize,
+    f32_buffer: Vec<f32>,
+    _i16_buffer: Vec<i16>
 }
 
 #[wasm_bindgen]
 impl DecodedSignature {
-    pub fn new(s16_mono_16khz_buffer: Vec<i16>) -> DecodedSignature {
-        DecodedSignature { 
+    pub fn new(f32_buffer: Vec<f32>, orig_sample_rate_hz: u32, orig_channel_count: usize) -> DecodedSignature {
+        DecodedSignature {
             sample_rate_hz: 16000,
-            number_samples: s16_mono_16khz_buffer.len() as u32,
-            s16_mono_16khz_buffer,
+            orig_sample_rate_hz,
+            orig_channel_count,
+            _i16_buffer: Vec::new(),
+            f32_buffer
         }
     }
 
-    fn encode_to_binary(&self) -> Result<Vec<u8>, Box<dyn Error>> {
+    fn encode_to_binary(&mut self) -> Result<Vec<u8>, Box<dyn Error>> {
         let mut cursor = Cursor::new(vec![]);
 
         // Please see the RawSignatureHeader structure definition above for
@@ -57,14 +62,14 @@ impl DecodedSignature {
         cursor.write_u32::<LittleEndian>(0)?; // void2
         cursor.write_u32::<LittleEndian>(0)?;
         cursor.write_u32::<LittleEndian>(
-            self.number_samples + (self.sample_rate_hz as f32 * 0.24) as u32,
+            self.number_samples() as u32 + (self.sample_rate_hz as f32 * 0.24) as u32,
         )?; // number_samples_plus_divided_sample_rate
         cursor.write_u32::<LittleEndian>((15 << 19) + 0x40000)?; // fixed_value
 
         cursor.write_u32::<LittleEndian>(0x40000000)?;
         cursor.write_u32::<LittleEndian>(0)?; // size_minus_header - Will write later
 
-        let frequency_band_to_sound_peaks = SignatureGenerator::frequency_band_to_sound_peaks(&self.s16_mono_16khz_buffer);
+        let frequency_band_to_sound_peaks = SignatureGenerator::frequency_band_to_sound_peaks(&self.i16_buffer());
         let mut sorted_iterator: Vec<_> = frequency_band_to_sound_peaks.iter().collect();
         sorted_iterator.sort_by(|x, y| x.0.cmp(y.0));
 
@@ -119,7 +124,7 @@ impl DecodedSignature {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn uri(&self) -> String {
+    pub fn uri(&mut self) -> String {
         let binary = self.encode_to_binary();
         if binary.is_err() {
             return String::new();
@@ -132,7 +137,19 @@ impl DecodedSignature {
     }
 
     #[wasm_bindgen(getter)]
-    pub fn samplems(&self) -> u32 {
-        (self.number_samples as f64 / self.sample_rate_hz as f64 * 1000.0) as u32
+    pub fn samplems(&mut self) -> u32 {
+        (self.number_samples() as f64 / self.sample_rate_hz as f64 * 1000.0) as u32
+    }
+
+    fn i16_buffer(&mut self) -> &Vec<i16> {
+        if self._i16_buffer.len() == 0 {
+            self._i16_buffer = resample(self.orig_sample_rate_hz, self.orig_channel_count, &self.f32_buffer, 16000);
+        }
+        &self._i16_buffer
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn number_samples(&mut self) -> usize {
+        self.i16_buffer().len()
     }
 }

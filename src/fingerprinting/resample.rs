@@ -2,13 +2,10 @@ use rubato::Resampler;
 use rubato::SincFixedIn;
 use rubato::SincInterpolationType;
 use rubato::SincInterpolationParameters;
-use symphonia::core::audio::SignalSpec;
-use std::error::Error;
 
-pub fn resample(spec: SignalSpec, samples: Vec<f32>, target_rate: i32) -> Result<Vec<i16>, Box<dyn Error>> {
-    let resample_ratio = target_rate as f64 / spec.rate as f64;
+pub fn resample(sample_rate: u32, channel_count: usize, samples: &Vec<f32>, target_rate: i32) -> Vec<i16> {
+    let resample_ratio = target_rate as f64 / sample_rate as f64;
     let max_resample_ratio_relative = 2.0;
-    let channel_count = spec.channels.count();
     let chunk_size = samples.len() / channel_count;
     let parameters = SincInterpolationParameters {
         sinc_len: 256,
@@ -23,18 +20,18 @@ pub fn resample(spec: SignalSpec, samples: Vec<f32>, target_rate: i32) -> Result
         parameters,
         chunk_size,
         1,
-    )?;
+    ).expect("Failed to create resampler");
 
     let mut mono_samples = vec![0f32; samples.len() / channel_count];
     for (i, sample) in samples.iter().enumerate() {
         mono_samples[i / channel_count] += sample / channel_count as f32;
     }
 
-    let resampled_samples = resampler.process(&[&mono_samples], None)?;
+    let resampled_samples = resampler.process(&[&mono_samples], None).expect("Failed to resample");
     let result: Vec<i16> = resampled_samples[0]
         .iter()
         .map(|&sample| (sample * i16::MAX as f32) as i16)
         .collect();
 
-    Ok(result)
+    result
 }
