@@ -1,7 +1,7 @@
 {
   "name": "shazamio-core",
   "description": "A wasm port of shazamio-core",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "files": [
     "README.md",
     "LICENSE",

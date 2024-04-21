@@ -24,22 +24,22 @@ class DecodedSignature {
 ### Node.js
 
 ```ts
-import { Recognizer } from "shazamio-core";
+import { recognizeBytes } from "shazamio-core";
 import { readFileSync } from "fs";
 
 const songBytes = readFileSync("./my_song.flac");
-const signatures: DecodedSignature[] = Recognizer.recognizeBytes(songBytes);
+const signatures: DecodedSignature[] = recognizeBytes(songBytes);
 ```
 
 ### Web
 
 ```ts
-import initShazamio, { Recognizer } from "shazamio-core/web";
+import initShazamio, { recognizeBytes } from "shazamio-core/web";
 await initShazamio();
 
 // Get bytes from a File in browser from the user
 const songBytes = new Uint8Array(await file.arrayBuffer());
-const signatures: DecodedSignature[] = Recognizer.recognizeBytes(songBytes);
+const [{ uri, samplems, sample_rate_hz, number_samples }]: DecodedSignature[] = recognizeBytes(songBytes);
 ```
 
 <br/>
