@@ -3,55 +3,28 @@ use base64::Engine;
 use byteorder::{LittleEndian, WriteBytesExt};
 use crc32fast::Hasher;
 use wasm_bindgen::prelude::wasm_bindgen;
-use std::cmp::Ordering;
-use std::collections::HashMap;
+
 use std::error::Error;
 use std::io::{Cursor, Seek, SeekFrom, Write};
 
+use crate::fingerprinting::signature_generator::SignatureGenerator;
+
 const DATA_URI_PREFIX: &str = "data:audio/vnd.shazam.sig;base64,";
-
-pub struct FrequencyPeak {
-    pub fft_pass_number: u32,
-    pub peak_magnitude: u16,
-    pub corrected_peak_frequency_bin: u16,
-    pub sample_rate_hz: u32,
-}
-
-#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
-pub enum FrequencyBand {
-    _250_520 = 0,
-    _520_1450 = 1,
-    _1450_3500 = 2,
-    _3500_5500 = 3,
-}
-
-impl Ord for FrequencyBand {
-    fn cmp(&self, other: &Self) -> Ordering {
-        (*self as i32).cmp(&(*other as i32))
-    }
-}
-
-impl PartialOrd for FrequencyBand {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some((*self as i32).cmp(&(*other as i32)))
-    }
-}
 
 #[wasm_bindgen]
 pub struct DecodedSignature {
     pub sample_rate_hz: u32,
     pub number_samples: u32,
-    #[wasm_bindgen(skip)]
-    pub frequency_band_to_sound_peaks: HashMap<FrequencyBand, Vec<FrequencyPeak>>,
+    s16_mono_16khz_buffer: Vec<i16>
 }
 
 #[wasm_bindgen]
 impl DecodedSignature {
-    pub fn new(sample_rate_hz: u32, number_samples: usize) -> DecodedSignature {
+    pub fn new(s16_mono_16khz_buffer: Vec<i16>) -> DecodedSignature {
         DecodedSignature { 
-            sample_rate_hz,
-            number_samples: number_samples as u32,
-            frequency_band_to_sound_peaks: HashMap::new()
+            sample_rate_hz: 16000,
+            number_samples: s16_mono_16khz_buffer.len() as u32,
+            s16_mono_16khz_buffer,
         }
     }
 
@@ -91,7 +64,8 @@ impl DecodedSignature {
         cursor.write_u32::<LittleEndian>(0x40000000)?;
         cursor.write_u32::<LittleEndian>(0)?; // size_minus_header - Will write later
 
-        let mut sorted_iterator: Vec<_> = self.frequency_band_to_sound_peaks.iter().collect();
+        let frequency_band_to_sound_peaks = SignatureGenerator::frequency_band_to_sound_peaks(&self.s16_mono_16khz_buffer);
+        let mut sorted_iterator: Vec<_> = frequency_band_to_sound_peaks.iter().collect();
         sorted_iterator.sort_by(|x, y| x.0.cmp(y.0));
 
         for (frequency_band, frequency_peaks) in sorted_iterator {

@@ -1,5 +1,5 @@
-pub mod algorithm;
 pub mod hanning;
-pub mod signature_format;
+pub mod decoded_signature;
 pub mod decode;
 pub mod resample;
+pub mod signature_generator;
